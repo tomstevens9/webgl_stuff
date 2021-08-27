@@ -12,8 +12,12 @@ const vertexShaderSource = `
 `
 
 const fragmentShaderSource = `
+    precision mediump float;
+
+    uniform vec4 uColor;
+
     void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = uColor;
     }
 `
 
@@ -72,10 +76,16 @@ function initBuffers(gl) {
     // Now create an array of positions for the square.
   
     const positions = [
-       1.0,  1.0,
-      -1.0,  1.0,
-       1.0, -1.0,
-      -1.0, -1.0,
+      // front
+       1.0,  1.0, 1.0,
+      -1.0,  1.0, 1.0,
+       1.0, -1.0, 1.0,
+      -1.0, -1.0, 1.0,
+      // back
+       1.0,  1.0, -1.0,
+      -1.0,  1.0, -1.0,
+       1.0, -1.0, -1.0,
+      -1.0, -1.0, -1.0
     ];
   
     // Now pass the list of positions into WebGL to build the
@@ -128,15 +138,21 @@ function drawScene(gl, programInfo, buffers) {
   
     // Now move the drawing position a bit to where we want to
     // start drawing the square.
+    mat4.lookAt(modelViewMatrix,
+                [-26, 45, -20],
+                [0, 0, 1],
+                [0, 1, 0])
   
     mat4.translate(modelViewMatrix,     // destination matrix
                    modelViewMatrix,     // matrix to translate
-                   [-0.0, 0.0, -6.0]);  // amount to translate
+                   [-0.0, 0.0, -5.0]);  // amount to translate
+
+
   
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
     {
-      const numComponents = 2;
+      const numComponents = 3;
       const type = gl.FLOAT;
       const normalize = false;
       const stride = 0;
@@ -167,9 +183,23 @@ function drawScene(gl, programInfo, buffers) {
         programInfo.uniformLocations.modelViewMatrix,
         false,
         modelViewMatrix);
+
+    gl.uniform4f(
+        programInfo.uniformLocations.color,
+        1.0, 0.0, 0.0, 1.0);
   
     {
       const offset = 0;
+      const vertexCount = 4;
+      gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+    }
+
+    gl.uniform4f(
+        programInfo.uniformLocations.color,
+        1.0, 1.0, 0.0, 1.0);
+
+    {
+      const offset = 4;
       const vertexCount = 4;
       gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
     }
@@ -195,6 +225,7 @@ function main() {
         uniformLocations: {
         projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
         modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+        color: gl.getUniformLocation(shaderProgram, 'uColor')
         },
     }
 
