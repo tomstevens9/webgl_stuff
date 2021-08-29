@@ -1,4 +1,4 @@
-const { mat4 } = glMatrix;
+const { mat4, vec3 } = glMatrix;
 
 class RenderableObject {
   constructor (gl, vertices, indices, shaderProgramInfo, position, scale, color) {
@@ -103,38 +103,113 @@ class RenderableObject {
   }
 }
 
+class Movement {
+  constructor() {
+    this.w = null
+    this.a = null
+    this.s = null
+    this.d = null
+    window.addEventListener('keydown', e => {
+      if (['w', 'a', 's', 'd'].includes(e.key)) {
+        this[e.key] = Date.now()
+      }
+    })
+
+    window.addEventListener('keyup', e => {
+      if (['w', 'a', 's', 'd'].includes(e.key)) {
+        this[e.key] = null
+      }
+    })
+  }
+}
+
+class Mouse {
+  constructor() {
+    const canvas = document.getElementById('my-canvas')
+    this.x = 0
+    this.y = 0
+    document.addEventListener('mousemove', e => {
+      if (document.pointerLockElement === canvas) {
+        this.x += e.movementX
+        this.y += e.movementY
+      }
+    })
+  }
+
+  positionDelta() {
+    const currentPos = [this.x, this.y]
+    this.x = 0
+    this.y = 0
+    return currentPos
+  }
+}
+
+const degToRad = deg => {
+  return deg * (Math.PI / 180)
+}
+
 class Camera {
   constructor (position) {
-    this.position = position
-    this.lookAt = [
-      this.position[0],
-      this.position[1],
-      this.position[2] - 30
+    this.position = vec3.fromValues(
+      position[0],
+      position[1],
+      position[2]
+    )
+    this.front = vec3.fromValues(0.0, 0.0, -1.0)
+    this.up = vec3.fromValues(0.0, 1.0, 0.0)
+    this.yaw = 270
+    this.pitch = 0
+    this.movement = new Movement()
+    this.mouse = new Mouse()
+  }
+
+  update() {
+    // update the angle
+    const positionDelta = this.mouse.positionDelta()
+    this.yaw += positionDelta[0] * 0.2
+    this.pitch += positionDelta[1] * -0.2
+    const direction = [
+      Math.cos(degToRad(this.yaw)) * Math.cos(degToRad(this.pitch)),
+      Math.sin(degToRad(this.pitch)),
+      Math.sin(degToRad(this.yaw)) * Math.cos(degToRad(this.pitch))
     ]
-    window.addEventListener('keydown', e => {
-      switch (e.key) {
-        case 'w':
-          this.position[2] -= 1
-          this.lookAt[2] -= 1
-          break
-        case 'a':
-          this.position[0] -= 1
-          this.lookAt[0] -= 1
-          break
-        case 's':
-          this.position[2] += 1
-          this.lookAt[2] += 1
-          break
-        case 'd':
-          this.position[0] += 1
-          this.lookAt[0] += 1
-          break
-      }
-      console.log('---')
-      console.log(this.position)
-      console.log(this.lookAt)
-      console.log('---')
-    })
+    vec3.normalize(this.front, direction)
+
+    // update the position
+    const cameraDelta = vec3.create()
+    vec3.scaleAndAdd(
+      this.position,
+      this.position,
+      this.front,
+      0.3 * Math.min(Math.max(this.movement.w - this.movement.s, -1), 1)
+    )
+
+    const tempVec = vec3.create()
+    vec3.cross(
+      tempVec,
+      this.front,
+      this.up
+    )
+    vec3.normalize(
+      tempVec,
+      tempVec
+    )
+    vec3.scale(
+      tempVec,
+      tempVec,
+      0.3 * Math.min(Math.max(this.movement.d - this.movement.a, -1), 1)
+    )
+    vec3.add(
+      this.position,
+      this.position,
+      tempVec
+    )
+
+    this.position = vec3.fromValues(
+      this.position[0],
+      8,
+      this.position[2]
+    )
   }
 }
 
@@ -213,11 +288,13 @@ function drawScene (gl, camera, renderableObjects) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
   const viewMatrix = mat4.create()
+  const target = vec3.create()
+  vec3.add(target, camera.position, camera.front)
   mat4.lookAt(
     viewMatrix,
     camera.position,
-    [0, 8, 0],
-    [0, 1, 0]
+    target,
+    camera.up
   )
 
   for (const renderableObject of renderableObjects) {
@@ -227,6 +304,10 @@ function drawScene (gl, camera, renderableObjects) {
 
 function main () {
   const canvas = document.getElementById('my-canvas')
+  canvas.addEventListener('click', e => {
+    canvas.requestPointerLock()
+    canvas.requestFullscreen()
+  })
   const gl = canvas.getContext('webgl2')
 
   if (gl === null) {
@@ -259,9 +340,42 @@ function main () {
     programInfo,
     [0.0, 1.0, 0.0],
     0,
-    [1.0, 0.0, 0.0, 1.0]
+    [0.59, 0.43, 0.55, 1.0]
   )
   renderableObjects.push(cube)
+
+  const cube2 = new RenderableObject(
+    gl,
+    CubeData.vertices,
+    CubeData.indices,
+    programInfo,
+    [5.0, 1.0, -7.0],
+    0,
+    [1.0, 0.96, 0.85, 1.0]
+  )
+  renderableObjects.push(cube2)
+
+  const cube3 = new RenderableObject(
+    gl,
+    CubeData.vertices,
+    CubeData.indices,
+    programInfo,
+    [0.0, 3.0, 0.0],
+    0,
+    [0.57, 0.59, 0.49, 1.0]
+  )
+  renderableObjects.push(cube3)
+
+  const cube4 = new RenderableObject(
+    gl,
+    CubeData.vertices,
+    CubeData.indices,
+    programInfo,
+    [5.0, 5.0, -7.0],
+    0,
+    [0.26, 0.33, 0.38, 1.0]
+  )
+  renderableObjects.push(cube4)
 
   renderableObjects.push(new RenderableObject(
     gl,
@@ -270,12 +384,13 @@ function main () {
     programInfo,
     [0.0, 0.0, 0.0],
     0,
-    [0.0, 1.0, 0.0, 1.0]
+    [0.2, 0.55, 0.19, 1.0]
   ))
 
   const camera = new Camera([0, 8, 30])
 
   tick = () => {
+    camera.update()
     drawScene(gl, camera, renderableObjects)
     requestAnimationFrame(tick)
   }
