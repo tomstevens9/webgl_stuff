@@ -48,9 +48,21 @@ class RenderableObject {
 
   render (viewMatrix) {
     const fieldOfView = 45 * Math.PI / 180 // in radians
-    const aspect = this.gl.canvas.clientWidth / this.gl.canvas.clientHeight
+    const canvas = document.getElementById('my-canvas')
+    let aspect
+    if (document.fullscreenElement == canvas) {
+      canvas.width = screen.width
+      canvas.height = screen.height
+      aspect = screen.width / screen.height 
+      this.gl.viewport(0, 0, screen.width, screen.height)
+    } else {
+      canvas.width = 1280
+      canvas.height = 720
+      aspect = this.gl.canvas.clientWidth / this.gl.canvas.clientHeight
+      this.gl.viewport(0, 0, 1280, 720)
+    }
     const zNear = 0.1
-    const zFar = 100.0
+    const zFar = 1000.0
     const projectionMatrix = mat4.create()
 
     // note: glmatrix.js always has the first argument
