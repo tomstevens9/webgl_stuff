@@ -426,9 +426,9 @@ function main () {
       modelData.vertices,
       modelData.indices,
       programInfo,
-      [0.0, 0.0, 0.0],
-      5,
-      'cube.jpg'
+      [10.0, 10.0, 10.0],
+      1,
+      'cube.png'
     ))
   })
   modelReq2.open('GET', 'model/cube.obj')

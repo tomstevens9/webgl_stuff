@@ -1,15 +1,15 @@
 const CubeData = new function(){
   this.vertices = [
     // back
-    -1.0, 1.0, -1.0, // top left
-    -1.0, -1.0, -1.0, // bottom left
-    1.0, -1.0, -1.0, // bottom right
-    1.0, 1.0, -1.0, // top right
+    -1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // top left
+    -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // bottom left
+    1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // bottom right
+    1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // top right
     // front
-    -1.0, 1.0, 1.0, // top left
-    -1.0, -1.0, 1.0, // bottom left
-    1.0, -1.0, 1.0, // bottom right
-    1.0, 1.0, 1.0 // top right
+    -1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // top left
+    -1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // bottom left
+    1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, // bottom right
+    1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 // top right
   ]
 
   this.indices = [
