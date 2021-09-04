@@ -414,6 +414,21 @@ function main () {
       5,
       'apple_tree.jpg'
     ))
+    const modelReq2 = new XMLHttpRequest()
+    modelReq2.addEventListener('load', data => {
+      modelData = JSON.parse(modelReq2.response)
+      renderableObjects.push(new RenderableObject(
+        gl,
+        modelData.vertices,
+        modelData.indices,
+        programInfo,
+        [10.0, 10.0, 10.0],
+        1,
+        'cube.png'
+      ))
+    })
+    modelReq2.open('GET', 'model/cube.obj')
+    modelReq2.send()
   })
   modelReq.open('GET', 'model/apple_tree.obj')
   modelReq.send()
