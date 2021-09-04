@@ -1,12 +1,11 @@
 const { mat4, vec3 } = glMatrix;
 
 class RenderableObject {
-  constructor (gl, vertices, indices, shaderProgramInfo, position, scale, color) {
+  constructor (gl, vertices, indices, shaderProgramInfo, position, scale, texture_name) {
     this.gl = gl
     this.shaderProgramInfo = shaderProgramInfo
     this.position = position
     this.scale = scale
-    this.color = color
     // create a vao for the object
     this.vao = this.gl.createVertexArray()
     this.gl.bindVertexArray(this.vao)
@@ -22,7 +21,7 @@ class RenderableObject {
     const numComponents = 3
     const type = this.gl.FLOAT
     const normalize = false
-    const stride = 0
+    const stride = 4 * 8  // sizeof Float32 * 8
     const offset = 0
     this.gl.vertexAttribPointer(
       shaderProgramInfo.attribLocations.vertexPosition,
@@ -35,6 +34,18 @@ class RenderableObject {
     this.gl.enableVertexAttribArray(
       shaderProgramInfo.attribLocations.vertexPosition
     )
+    // texture info
+    this.gl.vertexAttribPointer(
+      shaderProgramInfo.attribLocations.textureCoord,
+      2,
+      this.gl.FLOAT,
+      normalize,
+      stride,
+      4 * 3  // sizeof Float32 * 3
+    )
+    this.gl.enableVertexAttribArray(
+      shaderProgramInfo.attribLocations.textureCoord
+    )
     // load indices
     const indicesBuffer = this.gl.createBuffer()
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indicesBuffer)
@@ -44,6 +55,29 @@ class RenderableObject {
       this.gl.STATIC_DRAW
     )
     this.vertexCount = indices.length
+    // load texture
+    const texture = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 1;
+    const height = 1;
+    const border = 0;
+    const srcFormat = gl.RGBA;
+    const srcType = gl.UNSIGNED_BYTE;
+    const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                  width, height, border, srcFormat, srcType,
+                  pixel);
+  
+    const image = new Image()
+    image.onload = function() {
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                    srcFormat, srcType, image)
+      gl.generateMipmap(gl.TEXTURE_2D)
+    }
+    image.src = `assets/textures/${texture_name}`
   }
 
   render (viewMatrix) {
@@ -78,6 +112,13 @@ class RenderableObject {
     // Set the drawing position to the "identity" point, which is
     // the center of the scene.
     const modelMatrix = mat4.create()
+
+    mat4.scale(
+      modelMatrix,
+      modelMatrix,
+      [this.scale, this.scale, this.scale]
+   )
+
     mat4.translate(
       modelMatrix,
       modelMatrix,
@@ -104,11 +145,6 @@ class RenderableObject {
       this.shaderProgramInfo.uniformLocations.viewMatrix,
       false,
       viewMatrix
-    )
-
-    this.gl.uniform4fv(
-      this.shaderProgramInfo.uniformLocations.color,
-      this.color
     )
 
     this.gl.drawElements(this.gl.TRIANGLES, this.vertexCount, this.gl.UNSIGNED_SHORT, 0)
@@ -227,23 +263,29 @@ class Camera {
 
 const vertexShaderSource = `
     attribute vec4 aVertexPosition;
+    attribute vec2 aTextureCoord;
 
     uniform mat4 uModelMatrix;
     uniform mat4 uViewMatrix;
     uniform mat4 uProjectionMatrix;
 
+    varying highp vec2 vTextureCoord;
+
     void main() {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
+    vTextureCoord = aTextureCoord;
     }
 `
 
 const fragmentShaderSource = `
     precision mediump float;
 
-    uniform vec4 uColor;
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
 
     void main() {
-        gl_FragColor = uColor;
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
 `
 
@@ -333,71 +375,48 @@ function main () {
   const programInfo = {
     program: shaderProgram,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord')
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
       viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
-      color: gl.getUniformLocation(shaderProgram, 'uColor')
     }
   }
 
   const renderableObjects = []
 
-  const cube = new RenderableObject(
-    gl,
-    CubeData.vertices,
-    CubeData.indices,
-    programInfo,
-    [0.0, 1.0, 0.0],
-    0,
-    [0.59, 0.43, 0.55, 1.0]
-  )
-  renderableObjects.push(cube)
-
-  const cube2 = new RenderableObject(
-    gl,
-    CubeData.vertices,
-    CubeData.indices,
-    programInfo,
-    [5.0, 1.0, -7.0],
-    0,
-    [1.0, 0.96, 0.85, 1.0]
-  )
-  renderableObjects.push(cube2)
-
-  const cube3 = new RenderableObject(
-    gl,
-    CubeData.vertices,
-    CubeData.indices,
-    programInfo,
-    [0.0, 3.0, 0.0],
-    0,
-    [0.57, 0.59, 0.49, 1.0]
-  )
-  renderableObjects.push(cube3)
-
-  const cube4 = new RenderableObject(
-    gl,
-    CubeData.vertices,
-    CubeData.indices,
-    programInfo,
-    [5.0, 5.0, -7.0],
-    0,
-    [0.26, 0.33, 0.38, 1.0]
-  )
-  renderableObjects.push(cube4)
-
   renderableObjects.push(new RenderableObject(
     gl,
-    [-100, 0, 100, -100, 0, -100, 100, 0, -100, 100, 0, 100],
+    [
+      -100.0, 0.0, 100.0, 0.2, 0.54, 0.0, 0.0, 0.0,
+      -100.0, 0.0, -100.0, 0.2, 0.54, 0.0, 0.0, 0.0,
+      100.0, 0.0, -100.0, 0.2, 0.54, 0.0, 0.0, 0.0,
+      100.0, 0.0, 100.0, 0.2, 0.54, 0.0, 0.0, 0.0
+    ],
     [0, 1, 2, 2, 3, 0],
     programInfo,
     [0.0, 0.0, 0.0],
-    0,
-    [0.2, 0.55, 0.19, 1.0]
+    1,
+    'apple_tree.jpg'
   ))
+
+  const modelReq = new XMLHttpRequest()
+  modelReq.addEventListener('load', data => {
+    modelData = JSON.parse(modelReq.response)
+    renderableObjects.push(new RenderableObject(
+      gl,
+      modelData.vertices,
+      modelData.indices,
+      programInfo,
+      [0.0, 0.0, 0.0],
+      5,
+      'apple_tree.jpg'
+    ))
+  })
+  modelReq.open('GET', 'model/apple_tree.obj')
+  modelReq.send()
 
   const camera = new Camera([0, 8, 30])
 
