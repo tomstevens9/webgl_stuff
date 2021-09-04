@@ -418,6 +418,22 @@ function main () {
   modelReq.open('GET', 'model/apple_tree.obj')
   modelReq.send()
 
+  const modelReq2 = new XMLHttpRequest()
+  modelReq2.addEventListener('load', data => {
+    modelData = JSON.parse(modelReq2.response)
+    renderableObjects.push(new RenderableObject(
+      gl,
+      modelData.vertices,
+      modelData.indices,
+      programInfo,
+      [0.0, 0.0, 0.0],
+      5,
+      'cube.jpg'
+    ))
+  })
+  modelReq2.open('GET', 'model/cube.obj')
+  modelReq2.send()
+
   const camera = new Camera([0, 8, 30])
 
   tick = () => {
