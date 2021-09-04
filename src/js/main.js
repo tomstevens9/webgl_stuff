@@ -399,7 +399,7 @@ function main () {
     programInfo,
     [0.0, 0.0, 0.0],
     1,
-    'apple_tree.jpg'
+    'cube.png'
   ))
 
   const modelReq = new XMLHttpRequest()
@@ -412,7 +412,7 @@ function main () {
       programInfo,
       [0.0, 0.0, 0.0],
       5,
-      'apple_tree.jpg'
+      'cube.png'
     ))
   })
   modelReq.open('GET', 'model/apple_tree.obj')
