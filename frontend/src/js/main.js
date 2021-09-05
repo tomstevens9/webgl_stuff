@@ -1,4 +1,4 @@
-const { mat4, vec3 } = glMatrix;
+import { mat4, vec3 } from 'gl-matrix';
 
 class RenderableObject {
   constructor (gl, vertices, indices, shaderProgramInfo, position, scale, texture_name) {
@@ -436,7 +436,7 @@ function main () {
 
   const camera = new Camera([0, 8, 30])
 
-  tick = () => {
+  const tick = () => {
     camera.update()
     drawScene(gl, camera, renderableObjects)
     requestAnimationFrame(tick)
